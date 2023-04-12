@@ -21,7 +21,9 @@ export function detectCodeFormat(
     indent:
       userStyles.tabWidth === undefined || userStyles.useTabs === undefined,
     quote: userStyles.quote === undefined,
+    // 箭头函数 paren
     arrowParens: userStyles.arrowParensAlways === undefined,
+    // 尾逗号
     trailingComma: userStyles.trailingComma === undefined,
   };
 
@@ -34,6 +36,15 @@ export function detectCodeFormat(
 
   // Syntax detection regex
   // TODO: Perf: Compile only for features we need to detect
+  /**
+   * 检测语法规则 
+   * 
+   * "" 中间不能存在 "
+   *  '' 中间不存在 '
+   * () => 括号中间不存在 ),
+   * , + 任意空白字符 + ]} 
+   * 
+  */  
   const syntaxDetectRegex =
     /(?<doubleQuote>"[^"]+")|(?<singleQuote>'[^']+')|(?<singleParam>\([^),]+\)\s*=>)|(?<trailingComma>,\s*[\]}])/g;
   const syntaxUsages = {
@@ -51,7 +62,7 @@ export function detectCodeFormat(
     // TODO: Trim comments
     const trimmitedLine = line.trim();
 
-    // Skip empty lines
+    // 跳过空行
     if (trimmitedLine.length === 0) {
       continue;
     }
@@ -61,7 +72,7 @@ export function detectCodeFormat(
       maxLineLength = line.length;
     }
 
-    // Indentation analysis
+    // Ident 分析
     if (detect.indent) {
       const lineIndent = line.match(/^\s+/)?.[0] || "";
       if (lineIndent.length > 0) {
@@ -71,25 +82,27 @@ export function detectCodeFormat(
         if (lineIndent[0] === "\t") {
           tabUsages++;
         } else if (lineIndent.length > 0) {
+          // lineident.length > 2
           tabUsages--;
         }
       }
     }
 
-    // Line ending analysis
+    // 行尾分析
     if (trimmitedLine[trimmitedLine.length - 1] === ";") {
       semiUsages++;
     } else if (trimmitedLine.length > 0) {
       semiUsages--;
     }
 
-    // Syntax analysis
+    // 语法分析
     if (detect.quote || detect.arrowParens) {
       const matches = trimmitedLine.matchAll(syntaxDetectRegex);
       for (const match of matches) {
         if (!match.groups) {
           continue;
         }
+        // syntaxUsages 记录
         for (const key in syntaxUsages) {
           if (match.groups[key]) {
             // @ts-ignore
@@ -99,6 +112,7 @@ export function detectCodeFormat(
       }
     }
 
+    // 尾逗号
     if (detect.trailingComma) {
       if (line.startsWith("}") || line.startsWith("]")) {
         if (previousLineTrailing) {
@@ -107,6 +121,7 @@ export function detectCodeFormat(
           multiLineTrailingCommaUsages--;
         }
       }
+  
       previousLineTrailing = trimmitedLine.endsWith(",");
     }
   }

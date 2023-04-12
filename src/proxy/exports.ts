@@ -32,11 +32,13 @@ export function createExportsProxy(root: Program, mod: ProxifiedModule) {
 
     const node = literalToAst(value) as any;
     for (const n of root.body) {
-      if (n.type === type) {
+      if (n.type === type) {  
+        // export default Idenfirter
         if (key === "default") {
           n.declaration = node;
           return;
         }
+        // export var/const/let a = 1 or function a (){}
         if (n.declaration && "declarations" in n.declaration) {
           const dec = n.declaration.declarations[0];
           if ("name" in dec.id && dec.id.name === key) {
@@ -44,19 +46,34 @@ export function createExportsProxy(root: Program, mod: ProxifiedModule) {
             return;
           }
         }
+        /**
+         * todo 
+         * 处理 declaration: null 的情况
+         * `const foo = 1; export {foo}`
+         */
       }
     }
 
+    /**
+     * 这里处理 当使用 mod.exports.foo = 1 
+     * 类似这种直接设置修改
+     */
     root.body.push(
       key === "default"
         ? b.exportDefaultDeclaration(node)
         : (b.exportNamedDeclaration(
-            b.variableDeclaration("const", [
-              b.variableDeclarator(b.identifier(key), node),
-            ])
-          ) as any)
+          b.variableDeclaration("const", [
+            b.variableDeclarator(b.identifier(key), node),
+          ])
+        ) as any)
     );
   };
+
+
+  // TODO:
+  // mod 是上层传入的 当前 需要往 createProxy 第二参数传入处理好的 exports 对象
+  // exports 对象需要在这里去挂载上属性
+  // 当目前是 { $type: "exports" }
 
   return createProxy(
     root,

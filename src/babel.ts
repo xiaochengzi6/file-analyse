@@ -25,6 +25,10 @@ function _getBabelOptions(): ParserOptions & { plugins: ParserPlugin[] } {
   // parser to be more restrictive for some reason, you can always pass
   // your own parser object to recast.parse.
   return {
+    /**
+     * babel parser options
+     * https://babeljs.io/docs/babel-parser#options
+     */
     sourceType: "module",
     strictMode: false,
     allowImportExportEverywhere: true,

@@ -27,5 +27,6 @@ export function proxifyModule<T extends object>(
   util.imports = createImportsProxy(root, mod) as any;
   util.generate = (options) => generateCode(mod, options);
 
+  console.log("util", util)
   return mod;
 }

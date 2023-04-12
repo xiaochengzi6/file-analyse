@@ -29,6 +29,12 @@ export function isValidPropName(name: string) {
 
 const PROXY_KEY = "__magicast_proxy";
 
+/**
+ * 根据 value 类型创建并返回 ast 节点
+ * @param value 
+ * @param seen 
+ * @returns 
+ */
 export function literalToAst(value: any, seen = new Set()): ASTNode {
   if (value === undefined) {
     return b.identifier("undefined") as any;
@@ -40,6 +46,7 @@ export function literalToAst(value: any, seen = new Set()): ASTNode {
   if (LITERALS_TYPEOF.has(typeof value)) {
     return b.literal(value) as any;
   }
+  // 存在 相互引用关系 抛错
   if (seen.has(value)) {
     throw new MagicastError("Can not serialize circular reference");
   }
@@ -120,7 +127,7 @@ export function createProxy<T>(
 ): T {
   const utils = makeProxyUtils(node, extend);
   return new Proxy(
-    {},
+    utils,
     {
       ownKeys() {
         return Object.keys(utils).filter(
