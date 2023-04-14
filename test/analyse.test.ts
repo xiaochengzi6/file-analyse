@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { analyse } from './../src/proxy/analyse';
-import { getBabelParser } from './../src/babel';
+import { analyse } from '../src/proxy/analyse';
+import { getBabelParser } from '../src/babel';
 
 const getResult = (code) => {
   const parser = getBabelParser()
