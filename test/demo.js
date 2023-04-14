@@ -1,4 +1,4 @@
-import { parseModule, generateCode } from '../dist/index.mjs';
+import { parseModule, generateCode} from '../dist/index.mjs';
 
 
 const mod = parseModule(`
