@@ -1,5 +1,5 @@
 /* eslint-disable unicorn/no-nested-ternary */
-import * as recast from "recast";
+import recast, { Options } from "recast";
 import {
   ImportDeclaration,
   ImportDefaultSpecifier,
@@ -11,10 +11,12 @@ import { MagicastError } from "../error";
 import { createProxy } from "./_utils";
 import {
   ImportItemInput,
+  ImportsItemInput,
   ProxifiedImportItem,
   ProxifiedImportsMap,
   ProxifiedModule,
 } from "./types";
+import { loadFile } from "../code";
 
 const b = recast.types.builders;
 const _importProxyCache = new WeakMap<any, ProxifiedImportItem>();
@@ -116,7 +118,8 @@ export function creatImportProxy(
 export function createImportsProxy(
   root: Program,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  mod: ProxifiedModule
+  mod: ProxifiedModule,
+  importObj: ImportsItemInput
 ): ProxifiedImportsMap {
   // TODO: cache
   const getAllImports = () => {
@@ -146,8 +149,8 @@ export function createImportsProxy(
       value.imported === "default"
         ? b.importDefaultSpecifier(b.identifier(local))
         : value.imported === "*"
-        ? b.importNamespaceSpecifier(b.identifier(local))
-        : b.importSpecifier(b.identifier(value.imported), b.identifier(local));
+          ? b.importNamespaceSpecifier(b.identifier(local))
+          : b.importSpecifier(b.identifier(value.imported), b.identifier(local));
 
     const declaration = imports.find(
       (i) => i.from === value.from
@@ -177,24 +180,37 @@ export function createImportsProxy(
     return true;
   };
 
+  const setImportsValue = (extend: Record<string, any> = {}) => {
+    const obj = extend
+
+    obj.$add = (item: ImportItemInput) => {
+      proxy[item.local || item.imported] = item as any;
+    }
+
+    obj.toJSON = () => {
+      // eslint-disable-next-line unicorn/no-array-reduce
+      return getAllImports().reduce((acc, i) => {
+        acc[i.local] = i;
+        return acc;
+      }, {} as any);
+    }
+
+    obj.$items = () => {
+      return getAllImports()
+    }
+
+    obj.$loadFile = (filename: string, options: Options = {}) => {
+      return loadFile(filename, options)
+    }
+
+    return obj
+  }
+
+  const utils = setImportsValue(importObj)
+
   const proxy = createProxy(
     root,
-    {
-      $type: "imports",
-      $add(item: ImportItemInput) {
-        proxy[item.local || item.imported] = item as any;
-      },
-      get $items() {
-        return getAllImports();
-      },
-      toJSON() {
-        // eslint-disable-next-line unicorn/no-array-reduce
-        return getAllImports().reduce((acc, i) => {
-          acc[i.local] = i;
-          return acc;
-        }, {} as any);
-      },
-    },
+    utils,
     {
       get(_, prop) {
         return getAllImports().find((i) => i.local === prop);

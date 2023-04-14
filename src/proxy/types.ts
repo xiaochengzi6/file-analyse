@@ -95,6 +95,28 @@ export interface ImportItemInput {
   from: string;
 }
 
+export type ExportsItemInput = {
+  [Key in string]: {
+    name?: string;
+    localName?: string; 
+    isDeclaration?: boolean;
+    exportedName?: string;
+    expression?: Record<string, any>;
+  } | string | Object
+}
+
+export type ImportsItemInput = {
+  source?: string,
+  // 导入名称
+  localName?: string,
+  // 适用名称
+  name?: string,
+  _node?: Record<string, any>,
+  $type?: string
+} & {
+  [key in string]: string | object
+}
+
 export type ProxifiedValue =
   | ProxifiedArray
   | ProxifiedFunctionCall

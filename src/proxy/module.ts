@@ -6,6 +6,7 @@ import { ProxifiedModule } from "./types";
 import { createImportsProxy } from "./imports";
 import { createExportsProxy } from "./exports";
 import { createProxy } from "./_utils";
+import { analyse } from "./analyse";
 
 export function proxifyModule<T extends object>(
   ast: ParsedFileNode,
@@ -23,10 +24,11 @@ export function proxifyModule<T extends object>(
 
   const mod = createProxy(root, util, {}) as ProxifiedModule<T>;
 
-  util.exports = createExportsProxy(root, mod) as any;
-  util.imports = createImportsProxy(root, mod) as any;
+  const {imports, exports} = analyse(root)
+
+  util.exports = createExportsProxy(root, mod, exports) as any;
+  util.imports = createImportsProxy(root, mod, imports) as any;
   util.generate = (options) => generateCode(mod, options);
 
-  console.log("util", util)
   return mod;
 }

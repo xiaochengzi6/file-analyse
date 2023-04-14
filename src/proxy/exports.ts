@@ -2,11 +2,15 @@ import * as recast from "recast";
 import { Program } from "@babel/types";
 import { createProxy, literalToAst } from "./_utils";
 import { proxify } from "./proxify";
-import { ProxifiedModule } from "./types";
+import { ExportsItemInput, ProxifiedModule } from "./types";
 
 const b = recast.types.builders;
 
-export function createExportsProxy(root: Program, mod: ProxifiedModule) {
+export function createExportsProxy(
+  root: Program,
+  mod: ProxifiedModule,
+  exports: ExportsItemInput
+) {
   const findExport = (key: string) => {
     const type =
       key === "default" ? "ExportDefaultDeclaration" : "ExportNamedDeclaration";
@@ -26,37 +30,48 @@ export function createExportsProxy(root: Program, mod: ProxifiedModule) {
     }
   };
 
+  /**
+   * 更新 exports 属性
+   * 
+   * 不能适用所有的 export 的规则
+   * 目前支持修改 
+   * 1. export default Identifier
+   * 2. export var/const/let Identifier = value 
+   * 
+   * 不能支持的操作
+   * 1. export var Identifier1 = value1, Identifier2 = value2
+   * 2. export function a () {}
+   * 3. export * from 'filenamePath'
+   * 4. export {Identifier1, Identifier2}
+   * @param key 
+   * @param value 
+   * @returns 
+   */
   const updateOrAddExport = (key: string, value: any) => {
     const type =
       key === "default" ? "ExportDefaultDeclaration" : "ExportNamedDeclaration";
 
     const node = literalToAst(value) as any;
     for (const n of root.body) {
-      if (n.type === type) {  
-        // export default Idenfirter
-        if (key === "default") {
-          n.declaration = node;
+      if (n.type === type) {
+        if (key === 'default') {
+          n.declaration = node
           return;
         }
-        // export var/const/let a = 1 or function a (){}
+
         if (n.declaration && "declarations" in n.declaration) {
-          const dec = n.declaration.declarations[0];
+          const dec = n.declaration.declarations[0]
           if ("name" in dec.id && dec.id.name === key) {
-            dec.init = node;
+            dec.init = node
             return;
           }
         }
-        /**
-         * todo 
-         * 处理 declaration: null 的情况
-         * `const foo = 1; export {foo}`
-         */
+
       }
     }
 
     /**
-     * 这里处理 当使用 mod.exports.foo = 1 
-     * 类似这种直接设置修改
+     * 针对一些新添加的导出变量
      */
     root.body.push(
       key === "default"
@@ -69,17 +84,9 @@ export function createExportsProxy(root: Program, mod: ProxifiedModule) {
     );
   };
 
-
-  // TODO:
-  // mod 是上层传入的 当前 需要往 createProxy 第二参数传入处理好的 exports 对象
-  // exports 对象需要在这里去挂载上属性
-  // 当目前是 { $type: "exports" }
-
   return createProxy(
     root,
-    {
-      $type: "exports",
-    },
+    exports,
     {
       get(_, prop) {
         const node = findExport(prop as string);
