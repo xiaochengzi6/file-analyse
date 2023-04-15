@@ -139,11 +139,11 @@ export function createProxy<T>(
       },
       ...handler,
       get(target: any, key: string | symbol, receiver: any) {
-        if (key in utils) {
-          return (utils as any)[key];
-        }
         if (handler.get) {
           return handler.get(target, key, receiver);
+        }
+        if (key in utils) {
+          return (utils as any)[key];
         }
       },
       set(target: any, key: string | symbol, value: any, receiver: any) {

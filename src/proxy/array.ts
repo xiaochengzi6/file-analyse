@@ -5,7 +5,7 @@ import { ProxifiedArray, ProxifiedModule } from "./types";
 
 export function proxifyArrayElements<T extends any[]>(
   node: ASTNode,
-  elements: ASTNode[],
+  elements: Array<any>,
   mod?: ProxifiedModule
 ): ProxifiedArray<T> {
   const getItem = (key: number) => {
@@ -102,7 +102,7 @@ export function proxifyArrayElements<T extends any[]>(
         return true;
       },
       ownKeys() {
-        return ["length", ...elements.map((_, i) => i.toString())];
+        return ["length", ...elements];
       },
     }
   );
@@ -115,5 +115,13 @@ export function proxifyArray<T extends any[]>(
   if (!("elements" in node)) {
     return undefined as any;
   }
-  return proxifyArrayElements(node, node.elements as any, mod) as any;
+  const target = [] as any[]
+
+  node.elements.forEach(ele => {
+    if(ele && "value" in ele) {
+      target.push(ele)
+    }
+  })
+
+  return proxifyArrayElements(node, target, mod) as any;
 }

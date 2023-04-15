@@ -25,7 +25,6 @@ export function analyse(root: Program) {
           source: node.source.value,
           name,
           localName,
-          _node: specifier
         }
       })
     }
@@ -59,7 +58,6 @@ export function analyse(root: Program) {
             exports[exportedName] = {
               localName,
               exportedName,
-              _node: node 
             }
 
             // 处理 from 'filePath'
@@ -69,7 +67,6 @@ export function analyse(root: Program) {
                 source,
                 localName,
                 name: exportedName,
-                _node: node 
               }
             }
           }
@@ -82,7 +79,6 @@ export function analyse(root: Program) {
             exports[localName] = {
               localName,
               exportedName: localName,
-              _node: node 
             }
 
             // 处理 from 'filePath'
@@ -93,7 +89,6 @@ export function analyse(root: Program) {
                 source,
                 name: '*',
                 localName,
-                _node: node 
               }
             }
           }
@@ -118,7 +113,6 @@ export function analyse(root: Program) {
           exports[name] = {
             localName: name,
             expression: node.declaration,
-            _node: node 
           }
         }
       }
@@ -131,7 +125,6 @@ export function analyse(root: Program) {
         // 标记为 isAll 不会对其进行摇树优化
         isAll: true,
         name: '*',
-        _node: node, 
       }
     }
 

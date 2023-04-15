@@ -86,6 +86,8 @@ export function createExportsProxy(
 
   return createProxy(
     root,
+    // todo 
+    // 不应该直接挂载在这里
     exports,
     {
       get(_, prop) {
@@ -96,6 +98,8 @@ export function createExportsProxy(
       },
       set(_, prop, value) {
         updateOrAddExport(prop as string, value);
+        // TODO ast 树更新 需要重新计算 exports 值
+
         return true;
       },
       ownKeys() {

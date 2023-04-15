@@ -71,6 +71,7 @@ export type ProxifiedModule<T extends object = Record<string, any>> =
     exports: ProxifiedObject<T>;
     imports: ProxifiedImportsMap;
     generate: (options?: GenerateOptions) => { code: string; map?: any };
+    toJSON: Record<string, any>
   };
 
 export type ProxifiedImportsMap = Record<string, ProxifiedImportItem> &

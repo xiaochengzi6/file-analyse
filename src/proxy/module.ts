@@ -7,6 +7,7 @@ import { createImportsProxy } from "./imports";
 import { createExportsProxy } from "./exports";
 import { createProxy } from "./_utils";
 import { analyse } from "./analyse";
+import stringifyObject from 'stringify-object';
 
 export function proxifyModule<T extends object>(
   ast: ParsedFileNode,
@@ -22,9 +23,18 @@ export function proxifyModule<T extends object>(
     $type: "module",
   } as ProxifiedModule<T>;
 
+  util.toJSON = new Proxy({}, {
+    get(_, key) {
+      if (key in util) {
+        // @ts-ignore
+        return stringifyObject(util[key])
+      }
+    }
+  })
+
   const mod = createProxy(root, util, {}) as ProxifiedModule<T>;
 
-  const {imports, exports} = analyse(root)
+  const { imports, exports } = analyse(root)
 
   util.exports = createExportsProxy(root, mod, exports) as any;
   util.imports = createImportsProxy(root, mod, imports) as any;
