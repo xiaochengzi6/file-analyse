@@ -29,6 +29,7 @@ const { parseModule, generateCode, builders, createNode } = require("dist/index.
 
 ## Examples
 > file-analyse 功能
+
 **Example**: 获得全部 value 值 
 ~~~js
 const mod = parseModule(`export const a = 1`);
@@ -71,6 +72,7 @@ mod.analyse
 ~~~
 
 > magicast 功能
+
 **Example**: Modify a file:
 
 `config.js`:
