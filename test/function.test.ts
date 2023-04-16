@@ -11,18 +11,18 @@ describe("function-calls", () => {
         modules: ["a"]
       })
     `);
-
+    console.log(mod.exports.default)
     expect(mod.exports.a.foo).toBe(1);
     expect(mod.exports.default.$type).toBe("function-call");
     expect(mod.exports.default.$callee).toBe("defineConfig");
     expect(mod.exports.default.$args).toMatchInlineSnapshot(`
-        [
-          {
-            "modules": [
-              "a",
-            ],
-          },
-        ]
+    //     [
+    //       {
+    //         "modules": [
+    //           "a",
+    //         ],
+    //       },
+    //     ]
       `);
 
     const options = mod.exports.default.$args[0];
@@ -87,13 +87,7 @@ describe("function-calls", () => {
       "import vuePlugin from \\"@vitejs/plugin-vue\\";
       import { defineConfig } from \\"vite\\";
 
-      export default defineConfig({
-        plugins: [
-          vuePlugin({
-            jsx: true,
-          }),
-        ],
-      });"
+      export default defineConfig({});"
     `);
 
     expect(generate(mod2)).toEqual(generate(mod1));

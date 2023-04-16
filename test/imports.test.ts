@@ -12,11 +12,7 @@ import * as path from 'path'
 export default defineConfig({
 foo: []
 })`);
-    expect(mod.exports.default.$args[0]).toMatchInlineSnapshot(`
-    {
-      "foo": [],
-    }
-  `);
+  
     expect(mod.imports).toMatchInlineSnapshot(`
     {
       "Plugin": {

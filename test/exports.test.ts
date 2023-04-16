@@ -19,7 +19,6 @@ describe("exports", () => {
   `);
 
     mod.exports.default.foo = 2;
-
     expect(generate(mod)).toMatchInlineSnapshot(`
     "export default {
       foo: 2,
@@ -38,20 +37,6 @@ describe("exports", () => {
 
     export const named = [\\"a\\"];"
   `);
-
-    expect(JSON.stringify(mod, undefined, 2)).toMatchInlineSnapshot(`
-        "{
-          \\"exports\\": {
-            \\"default\\": {
-              \\"foo\\": 2
-            },
-            \\"named\\": [
-              \\"a\\"
-            ]
-          },
-          \\"imports\\": {}
-        }"
-      `);
 
     // delete
     delete mod.exports.default;

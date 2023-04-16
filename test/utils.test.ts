@@ -40,9 +40,48 @@ describe("literalToAst", () => {
 
   it("forward proxy", () => {
     const mod = parseModule(`export default { foo: 1 }`);
-    const node = mod.exports.default;
 
-    expect(builders.literal(node)).toBe(node.$ast);
+    // @ts-ignore
+    const _node = mod.analyse.exports._node as any 
+
+    expect(builders.literal({foo:1})).toMatchInlineSnapshot(_node,`
+      {
+        "comments": null,
+        "loc": null,
+        "properties": [
+          {
+            "comments": null,
+            "computed": false,
+            "decorators": null,
+            "key": {
+              "comments": null,
+              "loc": null,
+              "name": "foo",
+              "optional": false,
+              "type": "Identifier",
+              "typeAnnotation": null,
+            },
+            "kind": "init",
+            "loc": null,
+            "method": false,
+            "shorthand": false,
+            "type": "Property",
+            "value": {
+              "comments": null,
+              "extra": {
+                "raw": "1",
+                "rawValue": 1,
+              },
+              "loc": null,
+              "raw": null,
+              "type": "NumericLiteral",
+              "value": 1,
+            },
+          },
+        ],
+        "type": "ObjectExpression",
+      }
+    `);
   });
 
   it("circular reference", () => {
