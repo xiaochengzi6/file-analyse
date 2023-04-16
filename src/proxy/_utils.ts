@@ -1,6 +1,7 @@
 import * as recast from "recast";
 import { MagicastError } from "../error";
 import type { ASTNode } from "../types";
+import generate from '@babel/generator'
 
 export const LITERALS_AST = new Set([
   "Literal",
@@ -41,9 +42,23 @@ export function literalToAst(value: any, seen = new Set()): ASTNode {
   }
   if (value === null) {
     // eslint-disable-next-line unicorn/no-null
-    return b.literal(null) as any;
+    return b.nullLiteral()
   }
   if (LITERALS_TYPEOF.has(typeof value)) {
+
+    if(typeof value === 'string'){
+      return b.stringLiteral(value)
+    }
+    if(typeof value === 'number'){
+      return b.numericLiteral(value)
+    }
+    if(typeof value === 'boolean'){
+      return b.booleanLiteral(value)
+    }
+    if(typeof value === 'bigint'){
+      return b.bigIntLiteral(value as any) as any 
+    }
+   
     return b.literal(value) as any;
   }
   // 存在 相互引用关系 抛错
@@ -101,6 +116,7 @@ export function literalToAst(value: any, seen = new Set()): ASTNode {
       })
     ) as any;
   }
+  
   return b.literal(value) as any;
 }
 
@@ -108,11 +124,11 @@ export function makeProxyUtils<T extends object>(
   node: ASTNode,
   extend: T = {} as T
 ): Record<string, any> {
-  const obj = extend as any;
-  obj[PROXY_KEY] = true;
-  obj.$ast = node;
-  obj.$type ||= "object";
-  return obj;
+  const obj = extend as any
+  obj[PROXY_KEY] = true
+  obj.$ast = node
+  obj.$type ||= "object"
+  return obj
 }
 
 const propertyDescriptor = {
@@ -140,6 +156,10 @@ export function createProxy<T>(
       ...handler,
       get(target: any, key: string | symbol, receiver: any) {
         if (handler.get) {
+          // 解决 属性 找不到的情况
+          if(key in utils) {
+            return (utils as any)[key]; 
+          }
           return handler.get(target, key, receiver);
         }
         if (key in utils) {
@@ -158,4 +178,14 @@ export function createProxy<T>(
       },
     }
   ) as T;
+}
+
+export function getCodeValue(ast: ASTNode | null | undefined) {
+  if(ast == null) {
+    throw new MagicastError('No parameter')
+  }
+
+  const {code} = generate(ast)
+
+  return code 
 }

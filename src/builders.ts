@@ -1,5 +1,5 @@
 import * as recast from "recast";
-import { proxifyFunctionCall } from "./proxy/function-call";
+import { proxifyFunctionCall } from "./proxy/function";
 import { proxifyNewExpression } from "./proxy/new-expression";
 import { literalToAst } from "./proxy/_utils";
 import { Proxified } from "./types";

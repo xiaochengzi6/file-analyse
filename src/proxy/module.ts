@@ -6,8 +6,42 @@ import { ProxifiedModule } from "./types";
 import { createImportsProxy } from "./imports";
 import { createExportsProxy } from "./exports";
 import { createProxy } from "./_utils";
-import { analyse } from "./analyse";
+import { FileAnalyse } from "./analyse";
 import stringifyObject from 'stringify-object';
+import { Program } from '@babel/types';
+
+
+export function createModule(
+  root: Program,
+  mod: ProxifiedModule,
+  analyse: FileAnalyse
+) {
+
+  const makeProxyUtils = (extend: Record<string, any> = {}) => {
+    const obj = extend as any
+    obj.$ast = root
+    obj.analyse = analyse
+    obj.toJSON = new Proxy({}, {
+      get(_, key) {
+        
+        if (key in extend) {
+          // @ts-ignore
+          return stringifyObject(extend[key])
+        }
+      }
+    })
+
+    return obj
+  }
+
+  const utils = makeProxyUtils(mod)
+
+  return createProxy(
+    root,
+    utils,
+    {}
+  )
+}
 
 export function proxifyModule<T extends object>(
   ast: ParsedFileNode,
@@ -18,27 +52,18 @@ export function proxifyModule<T extends object>(
     throw new MagicastError(`Cannot proxify ${ast.type} as module`);
   }
 
+  const analyse = new FileAnalyse(root)
+
   const util = {
     $code: code,
     $type: "module",
-  } as ProxifiedModule<T>;
+  } as ProxifiedModule<T>
 
-  util.toJSON = new Proxy({}, {
-    get(_, key) {
-      if (key in util) {
-        // @ts-ignore
-        return stringifyObject(util[key])
-      }
-    }
-  })
+  const mod = createModule(root, util, analyse) as ProxifiedModule<T>
 
-  const mod = createProxy(root, util, {}) as ProxifiedModule<T>;
-
-  const { imports, exports } = analyse(root)
-
-  util.exports = createExportsProxy(root, mod, exports) as any;
-  util.imports = createImportsProxy(root, mod, imports) as any;
-  util.generate = (options) => generateCode(mod, options);
+  util.exports = createExportsProxy(root, mod, analyse) as any
+  util.imports = createImportsProxy(root, mod, analyse)
+  util.generate = (options) => generateCode(mod, options)
 
   return mod;
 }

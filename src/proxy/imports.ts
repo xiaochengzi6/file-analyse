@@ -17,6 +17,7 @@ import {
   ProxifiedModule,
 } from "./types";
 import { loadFile } from "../code";
+import { FileAnalyse } from "./analyse";
 
 const b = recast.types.builders;
 const _importProxyCache = new WeakMap<any, ProxifiedImportItem>();
@@ -119,7 +120,7 @@ export function createImportsProxy(
   root: Program,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   mod: ProxifiedModule,
-  importObj: ImportsItemInput
+  analyse: FileAnalyse
 ): ProxifiedImportsMap {
   // TODO: cache
   const getAllImports = () => {
@@ -131,6 +132,33 @@ export function createImportsProxy(
         }
       }
     }
+
+    if (analyse.imports) {
+      Object.keys(analyse.imports).forEach(key => {
+        const obj = analyse.imports[key] as any
+        if (typeof obj === 'object') {
+          const result = {
+            $exports: true
+          } as any
+          if ('from' in obj) {
+            result.from = obj.from
+          }
+          if ('local' in obj) {
+            result.local = obj.local
+          }
+          if ('imported' in obj) {
+            result.imported = obj.imported
+          }
+
+          let isAdd = imports.find((i) => i.from === result.from)
+
+          if(!isAdd) {
+            imports.push(result)
+          }
+        }
+      })
+    }
+
     return imports;
   };
 
@@ -180,49 +208,57 @@ export function createImportsProxy(
     return true;
   };
 
-  const setImportsValue = (extend: Record<string, any> = {}) => {
-    const obj = extend
-
-    obj.$add = (item: ImportItemInput) => {
-      proxy[item.local || item.imported] = item as any;
-    }
-
-    obj.toJSON = () => {
-      // eslint-disable-next-line unicorn/no-array-reduce
-      return getAllImports().reduce((acc, i) => {
-        acc[i.local] = i;
-        return acc;
-      }, {} as any);
-    }
-
-    obj.$items = () => {
-      return getAllImports()
-    }
-
-    obj.$loadFile = (filename: string, options: Options = {}) => {
-      return loadFile(filename, options)
-    }
-
-    return obj
-  }
-
-  const utils = setImportsValue(importObj)
-
   const proxy = createProxy(
     root,
-    utils,
+    {
+      $type: 'imports',
+      $add(item: ImportItemInput) {
+        proxy[item.local || item.imported] = item as any;
+      },
+
+      toJSON() {
+        // eslint-disable-next-line unicorn/no-array-reduce
+        return getAllImports().reduce((acc, i) => {
+          acc[i.local] = i;
+          return acc;
+        }, {} as any);
+      },
+
+      $items() {
+        return getAllImports()
+      },
+
+      $loadFile(filename: string, options: Options = {}) {
+        // 加载前需要看一下是否已经被加载过
+        return loadFile(filename, options)
+      }
+    },
     {
       get(_, prop) {
         return getAllImports().find((i) => i.local === prop);
       },
       set(_, prop, value) {
-        return updateImport(prop as string, value);
+        // 对 exports 做处理
+        if(prop === '$exports'){
+          return false 
+        }
+
+        const result = updateImport(prop as string, value);
+        // TODO 优化
+        analyse.update(root)
+
+        return result
       },
       deleteProperty(_, prop) {
-        return removeImport(prop as string);
+        removeImport(prop as string);
+        console.log('deleteProperty', prop)
+        analyse.update(root)
+        return true 
       },
       ownKeys() {
-        return getAllImports().map((i) => i.local);
+        return getAllImports()
+          .filter(i => i.local)
+          .map(i => i.local)
       },
       has(_, prop) {
         return getAllImports().some((i) => i.local === prop);

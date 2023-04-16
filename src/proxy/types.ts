@@ -5,6 +5,7 @@ import {
   ImportSpecifier,
 } from "@babel/types";
 import { ASTNode, GenerateOptions } from "../types";
+import { FileAnalyse } from "./analyse";
 
 export interface ProxyBase {
   $ast: ASTNode;
@@ -21,6 +22,12 @@ export type ProxifiedFunctionCall<Args extends any[] = unknown[]> =
     $type: "function-call";
     $args: ProxifiedArray<Args>;
     $callee: string;
+  };
+
+export type ProxifiedFunctionDeclaration<Args extends any[] = unknown[]> = 
+  ProxyBase & {
+    $type: 'function-declatation',
+    $args: any
   };
 
 export type ProxifiedNewExpression<Args extends any[] = unknown[]> =
@@ -71,7 +78,8 @@ export type ProxifiedModule<T extends object = Record<string, any>> =
     exports: ProxifiedObject<T>;
     imports: ProxifiedImportsMap;
     generate: (options?: GenerateOptions) => { code: string; map?: any };
-    toJSON: Record<string, any>
+    toJSON: Record<string, any>;
+    analyse: FileAnalyse;
   };
 
 export type ProxifiedImportsMap = Record<string, ProxifiedImportItem> &

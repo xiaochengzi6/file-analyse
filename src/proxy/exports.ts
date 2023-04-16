@@ -1,15 +1,16 @@
 import * as recast from "recast";
 import { Program } from "@babel/types";
-import { createProxy, literalToAst } from "./_utils";
+import { createProxy, getCodeValue, literalToAst } from "./_utils";
 import { proxify } from "./proxify";
-import { ExportsItemInput, ProxifiedModule } from "./types";
+import { ProxifiedModule } from "./types";
+import { FileAnalyse } from './analyse';
 
 const b = recast.types.builders;
 
 export function createExportsProxy(
   root: Program,
   mod: ProxifiedModule,
-  exports: ExportsItemInput
+  analyse: FileAnalyse
 ) {
   const findExport = (key: string) => {
     const type =
@@ -17,8 +18,8 @@ export function createExportsProxy(
 
     for (const n of root.body) {
       if (n.type === type) {
-        if (key === "default") {
-          return n.declaration;
+        if (key === "default") {   
+          return n.declaration
         }
         if (n.declaration && "declarations" in n.declaration) {
           const dec = n.declaration.declarations[0];
@@ -88,22 +89,25 @@ export function createExportsProxy(
     root,
     // todo 
     // 不应该直接挂载在这里
-    exports,
+    {
+      $type: "exports"
+    },
     {
       get(_, prop) {
-        const node = findExport(prop as string);
+        const node = findExport(prop as string)
         if (node) {
-          return proxify(node, mod);
+          return proxify(node, mod)
         }
       },
       set(_, prop, value) {
-        updateOrAddExport(prop as string, value);
-        // TODO ast 树更新 需要重新计算 exports 值
+        updateOrAddExport(prop as string, value)
+        // TODO 优化 不必全部遍历
+        analyse.update(root)
 
         return true;
       },
       ownKeys() {
-        return root.body
+        const result = root.body
           .flatMap((i) => {
             if (i.type === "ExportDefaultDeclaration") {
               return ["default"];
@@ -120,6 +124,8 @@ export function createExportsProxy(
             return [];
           })
           .filter(Boolean);
+
+          return result 
       },
       deleteProperty(_, prop) {
         const type =

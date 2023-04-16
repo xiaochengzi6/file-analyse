@@ -1,6 +1,6 @@
 import { ASTNode } from "../types";
 import { MagicastError } from "../error";
-import { createProxy } from "./_utils";
+import { createProxy, getCodeValue } from "./_utils";
 import { proxifyArrayElements } from "./array";
 import { ProxifiedFunctionCall, ProxifiedModule } from "./types";
 import { CallExpression } from "@babel/types";
@@ -41,23 +41,60 @@ export function proxifyFunctionCall<T extends []>(
 
   const getArgumentValue = (node: CallExpression) => {
     const args = [] as any[]
-    
+
     node.arguments.forEach(arg => {
       args.push(proxify(arg, mod))
     })
 
-    return  proxifyArrayElements<T>(node, args, mod);
+    return proxifyArrayElements<T>(node, args, mod);
   }
 
   const argumentsProxy = getArgumentValue(node)
 
-  return createProxy(
-    node,
-    {
+  const makeProxyUtils = () => {
+    const obj = {
       $type: "function-call",
       $callee: stringifyExpression(node.callee as any),
       $args: argumentsProxy,
+    } as any 
+
+    if('name' in node.callee){
+      const name = node.callee.name 
+      obj[name] = argumentsProxy
+    }
+
+    return obj 
+  }
+
+  const utils = makeProxyUtils()
+  
+  return createProxy(
+    node,
+    utils,
+    {
+      ownKeys() {
+        if('name' in node.callee){
+         return [node.callee.name] 
+        }
+        return []
+      }
+    }
+  ) as ProxifiedFunctionCall<T>;
+}
+
+
+export function proxifyFunctionDeclaration<T extends []>(
+  node: ASTNode,
+  mod?: ProxifiedModule
+) {
+
+
+  return createProxy(
+    node,
+    {
+      $type: 'function-declation',
+      $args: ''
     },
     {}
-  ) as ProxifiedFunctionCall<T>;
+  )
 }

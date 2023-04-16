@@ -1,7 +1,7 @@
 import { MagicastError } from "../error";
 import { ASTNode } from "../types";
 import { proxifyArray } from "./array";
-import { proxifyFunctionCall } from "./function-call";
+import { proxifyFunctionCall, proxifyFunctionDeclaration } from "./function";
 import { proxifyObject } from "./object";
 import { proxifyNewExpression } from "./new-expression";
 import { proxifyIdentifier } from "./identifier";
@@ -42,6 +42,10 @@ export function proxify<T>(node: ASTNode, mod?: ProxifiedModule): Proxified<T> {
     }
     case "Identifier": {
       proxy = proxifyIdentifier(node);
+      break;
+    }
+    case "FunctionDeclaration": {
+      proxy = proxifyFunctionDeclaration(node, mod)
       break;
     }
     default:

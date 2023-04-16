@@ -15,10 +15,7 @@ export function proxifyArrayElements<T extends any[]>(
   const replaceItem = (key: number, value: ASTNode) => {
     elements[key] = value as any;
   };
-
-  return createProxy(
-    node,
-    {
+  const utils =  {
       $type: "array",
       push(value: any) {
         elements.push(literalToAst(value) as any);
@@ -54,11 +51,19 @@ export function proxifyArrayElements<T extends any[]>(
       toJSON() {
         return elements.map((n) => proxify(n as any, mod));
       },
-    },
+    }
+
+  return createProxy(
+    node,
+    utils,
     {
       get(_, key) {
         if (key === "length") {
           return elements.length;
+        }
+        if(key in utils){
+          // @ts-ignore
+          return utils[key]
         }
         if (key === Symbol.iterator) {
           return function* () {
@@ -102,7 +107,7 @@ export function proxifyArrayElements<T extends any[]>(
         return true;
       },
       ownKeys() {
-        return ["length", ...elements];
+        return ["length", ...elements.map((_, i) => i.toString())];
       },
     }
   );
@@ -117,11 +122,5 @@ export function proxifyArray<T extends any[]>(
   }
   const target = [] as any[]
 
-  node.elements.forEach(ele => {
-    if(ele && "value" in ele) {
-      target.push(ele)
-    }
-  })
-
-  return proxifyArrayElements(node, target, mod) as any;
+  return proxifyArrayElements(node, node.elements, mod) as any;
 }
